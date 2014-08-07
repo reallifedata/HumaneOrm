@@ -1,5 +1,5 @@
 ﻿%{
-open Sql   
+open HumaneOrm.Sql
 %}   
  
 %token <string> ID   
@@ -16,7 +16,7 @@ open Sql
  
 // The start token becomes a parser function in the compiled code:
 %start start   
-%type <Sql.sqlStatement> start   
+%type <HumaneOrm.Sql.sqlStatement> start   
  
 %%   
  

@@ -2,6 +2,8 @@
 open System
 open Sql
 open Lexer
+open Microsoft.FSharp.Text.Lexing
+
 module Program =
     //open Sql
     [<EntryPoint>]
@@ -15,9 +17,9 @@ module Program =
                 ORDER BY x ASC, y DESC, z   
             "   
  
-            let lexbuf = LexBuffer<char>.FromString text
-            //let y = SqlParser.start SqlLexer.tokenize lexbuf   
-            //printfn "%A" y   
+            let lexbuf = LexBuffer<string>.FromString x
+            let y = Parser.start Lexer.tokenize lexbuf   
+            printfn "%A" y   
  
             Console.WriteLine("(press any key)")   
             Console.ReadKey(true) |> ignore

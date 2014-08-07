@@ -5,7 +5,7 @@ open Microsoft.FSharp.Text.Lexing
 open Microsoft.FSharp.Text.Parsing.ParseHelpers
 # 1 "SqlYacc.fsy"
 
-open Sql   
+open HumaneOrm.Sql
 
 # 10 "SqlYacc.fs"
 // This type is the type of tokens accepted by the parser
@@ -245,7 +245,7 @@ let _fsyacc_immediateActions = [|65535us; 49152us; 65535us; 65535us; 65535us; 65
 let _fsyacc_reductions ()  =    [| 
 # 246 "SqlYacc.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
-            let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : Sql.sqlStatement)) in
+            let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : HumaneOrm.Sql.sqlStatement)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
@@ -272,7 +272,7 @@ let _fsyacc_reductions ()  =    [|
                                                  
                    )
 # 28 "SqlYacc.fsy"
-                 : Sql.sqlStatement));
+                 : HumaneOrm.Sql.sqlStatement));
 # 276 "SqlYacc.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
@@ -631,5 +631,5 @@ let tables () : Microsoft.FSharp.Text.Parsing.Tables<_> =
     numTerminals = 27;
     productionToNonTerminalTable = _fsyacc_productionToNonTerminalTable  }
 let engine lexer lexbuf startState = (tables ()).Interpret(lexer, lexbuf, startState)
-let start lexer lexbuf : Sql.sqlStatement =
+let start lexer lexbuf : HumaneOrm.Sql.sqlStatement =
     Microsoft.FSharp.Core.Operators.unbox ((tables ()).Interpret(lexer, lexbuf, 0))

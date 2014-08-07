@@ -94,24 +94,24 @@ and _fslex_tokenize  _fslex_state lexbuf =
           )
   | 2 -> ( 
 # 51 "SqlLex.fsl"
-                                 INT(Int32.Parse(lexeme lexbuf)) 
+                                 INT(Int32.Parse(LexBuffer<int>.LexemeString lexbuf)) 
 # 98 "SqlLex.fs"
           )
   | 3 -> ( 
 # 52 "SqlLex.fsl"
-                                 FLOAT(Double.Parse(lexeme lexbuf)) 
+                                 FLOAT(Double.Parse(LexBuffer<float>.LexemeString lexbuf)) 
 # 103 "SqlLex.fs"
           )
   | 4 -> ( 
 # 53 "SqlLex.fsl"
-                                 ops.[lexeme lexbuf] 
+                                 ops.[LexBuffer<string>.LexemeString lexbuf] 
 # 108 "SqlLex.fs"
           )
   | 5 -> ( 
 # 54 "SqlLex.fsl"
-                                 match keywords.TryFind(lexeme lexbuf) with   
+                                 match keywords.TryFind(LexBuffer<string>.LexemeString lexbuf) with   
                					| Some(token) -> token   
-               					| None -> ID(lexeme lexbuf) 
+               					| None -> ID(LexBuffer<string>.LexemeString lexbuf) 
 # 115 "SqlLex.fs"
           )
   | 6 -> ( 
