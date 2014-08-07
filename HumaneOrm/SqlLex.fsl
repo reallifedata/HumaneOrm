@@ -1,39 +1,44 @@
-﻿{   
-#indent "off"
+﻿{
 module Lexer
 open Parser
 open System   
 open Microsoft.FSharp.Text.Lexing
  
 let newline (lexbuf: LexBuffer<_>) = 
-	lexbuf.StartPos <- lexbuf.StartPos.NextLine
+    lexbuf.StartPos <- lexbuf.StartPos.NextLine
  
 let keywords =   
-	[   
-		"SELECT", SELECT;   
-		"FROM", FROM;   
-		"WHERE", WHERE;   
-		"ORDER", ORDER;   
-		"BY", BY;   
-		"JOIN", JOIN;   
-		"INNER", INNER;   
-		"LEFT", LEFT;   
-		"RIGHT", RIGHT;   
-		"ASC", ASC;   
-		"DESC", DESC;   
-		"AND", AND;   
-		"OR", OR;   
-		"ON", ON;   
-	] |> Map.ofList   
+    [   
+        "SELECT", SELECT;   
+        "FROM", FROM;   
+        "WHERE", WHERE;   
+        "ORDER", ORDER;   
+        "BY", BY;   
+        "JOIN", JOIN;   
+        "INNER", INNER;   
+        "LEFT", LEFT;   
+        "RIGHT", RIGHT;   
+        "ASC", ASC;   
+        "DESC", DESC;   
+        "AND", AND;   
+        "OR", OR;   
+        "ON", ON;   
+        "TOP", TOP;   
+    ] |> Map.ofList   
  
 let ops =   
-	[   
-		"=",    EQ;   
-		"<",    LT;   
-		"<=",   LE;   
-		">",    GT;   
-		">=",   GE;   
-	] |> Map.ofList   
+    [   
+        "=",    EQ;   
+        "<",    LT;   
+        "<=",   LE;   
+        ">",    GT;   
+        ">=",   GE;   
+        "+",   PLUS;   
+        "*",   MUL;   
+        "-",   SUB;   
+        "/",   DIV;   
+        "%",   MOD;   
+    ] |> Map.ofList   
 }   
  
 let char        = ['a'-'z' 'A'-'Z']   
@@ -52,7 +57,7 @@ rule tokenize = parse
 | float         { FLOAT(Double.Parse(LexBuffer<float>.LexemeString lexbuf)) }   
 | operator      { ops.[LexBuffer<string>.LexemeString lexbuf] }   
 | identifier    { match keywords.TryFind(LexBuffer<string>.LexemeString lexbuf) with   
-					| Some(token) -> token   
-					| None -> ID(LexBuffer<string>.LexemeString lexbuf) }   
+                    | Some(token) -> token   
+                    | None -> ID(LexBuffer<string>.LexemeString lexbuf) }   
 | ','           { COMMA }   
 | eof           { EOF }

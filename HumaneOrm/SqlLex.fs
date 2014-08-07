@@ -1,42 +1,41 @@
 # 1 "SqlLex.fsl"
-    
-#indent "off"
+ 
 module Lexer
 open Parser
 open System   
 open Microsoft.FSharp.Text.Lexing
  
 let newline (lexbuf: LexBuffer<_>) = 
-	lexbuf.StartPos <- lexbuf.StartPos.NextLine
+    lexbuf.StartPos <- lexbuf.StartPos.NextLine
  
 let keywords =   
-	[   
-		"SELECT", SELECT;   
-		"FROM", FROM;   
-		"WHERE", WHERE;   
-		"ORDER", ORDER;   
-		"BY", BY;   
-		"JOIN", JOIN;   
-		"INNER", INNER;   
-		"LEFT", LEFT;   
-		"RIGHT", RIGHT;   
-		"ASC", ASC;   
-		"DESC", DESC;   
-		"AND", AND;   
-		"OR", OR;   
-		"ON", ON;   
-	] |> Map.ofList   
+    [   
+        "SELECT", SELECT;   
+        "FROM", FROM;   
+        "WHERE", WHERE;   
+        "ORDER", ORDER;   
+        "BY", BY;   
+        "JOIN", JOIN;   
+        "INNER", INNER;   
+        "LEFT", LEFT;   
+        "RIGHT", RIGHT;   
+        "ASC", ASC;   
+        "DESC", DESC;   
+        "AND", AND;   
+        "OR", OR;   
+        "ON", ON;   
+    ] |> Map.ofList   
  
 let ops =   
-	[   
-		"=",    EQ;   
-		"<",    LT;   
-		"<=",   LE;   
-		">",    GT;   
-		">=",   GE;   
-	] |> Map.ofList   
+    [   
+        "=",    EQ;   
+        "<",    LT;   
+        "<=",   LE;   
+        ">",    GT;   
+        ">=",   GE;   
+    ] |> Map.ofList   
 
-# 39 "SqlLex.fs"
+# 38 "SqlLex.fs"
 let trans : uint16[] array = 
     [| 
     (* State 0 *)
@@ -83,46 +82,46 @@ and tokenize  (lexbuf : Microsoft.FSharp.Text.Lexing.LexBuffer<_>) = _fslex_toke
 and _fslex_tokenize  _fslex_state lexbuf =
   match _fslex_tables.Interpret(_fslex_state,lexbuf) with
   | 0 -> ( 
-# 49 "SqlLex.fsl"
+# 48 "SqlLex.fsl"
                                  tokenize lexbuf 
-# 88 "SqlLex.fs"
+# 87 "SqlLex.fs"
           )
   | 1 -> ( 
-# 50 "SqlLex.fsl"
+# 49 "SqlLex.fsl"
                                  lexbuf.EndPos <- lexbuf.EndPos.NextLine; tokenize lexbuf; 
-# 93 "SqlLex.fs"
+# 92 "SqlLex.fs"
           )
   | 2 -> ( 
-# 51 "SqlLex.fsl"
+# 50 "SqlLex.fsl"
                                  INT(Int32.Parse(LexBuffer<int>.LexemeString lexbuf)) 
-# 98 "SqlLex.fs"
+# 97 "SqlLex.fs"
           )
   | 3 -> ( 
-# 52 "SqlLex.fsl"
+# 51 "SqlLex.fsl"
                                  FLOAT(Double.Parse(LexBuffer<float>.LexemeString lexbuf)) 
-# 103 "SqlLex.fs"
+# 102 "SqlLex.fs"
           )
   | 4 -> ( 
-# 53 "SqlLex.fsl"
+# 52 "SqlLex.fsl"
                                  ops.[LexBuffer<string>.LexemeString lexbuf] 
-# 108 "SqlLex.fs"
+# 107 "SqlLex.fs"
           )
   | 5 -> ( 
-# 54 "SqlLex.fsl"
+# 53 "SqlLex.fsl"
                                  match keywords.TryFind(LexBuffer<string>.LexemeString lexbuf) with   
-               					| Some(token) -> token   
-               					| None -> ID(LexBuffer<string>.LexemeString lexbuf) 
-# 115 "SqlLex.fs"
+                                   | Some(token) -> token   
+                                   | None -> ID(LexBuffer<string>.LexemeString lexbuf) 
+# 114 "SqlLex.fs"
           )
   | 6 -> ( 
-# 57 "SqlLex.fsl"
+# 56 "SqlLex.fsl"
                                  COMMA 
-# 120 "SqlLex.fs"
+# 119 "SqlLex.fs"
           )
   | 7 -> ( 
-# 58 "SqlLex.fsl"
+# 57 "SqlLex.fsl"
                                  EOF 
-# 125 "SqlLex.fs"
+# 124 "SqlLex.fs"
           )
   | _ -> failwith "tokenize"
 
