@@ -1,16 +1,19 @@
 ﻿%{
 open HumaneOrm.Sql
 %}   
- 
+
+//symbolic tokens
 %token <string> ID   
 %token <int> INT   
 %token <float> FLOAT   
- 
-%token AND OR   
+
+//literal keyword tokens
+%token AND OR 
 %token COMMA   
-%token EQ LT LE GT GE   
+%token EQ LT LE GT GE PLUS MUL SUB DIV MOD
 %token JOIN INNER LEFT RIGHT ON   
-%token SELECT FROM WHERE ORDER BY   
+%token SELECT FROM WHERE ORDER BY TOP
+%token LIKE NOT NULL CAST AS BETWEEN SET WITH
 %token ASC DESC   
 %token EOF   
  

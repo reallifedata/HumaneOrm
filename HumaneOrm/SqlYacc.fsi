@@ -4,11 +4,20 @@ type token =
   | EOF
   | ASC
   | DESC
+  | LIKE
+  | NOT
+  | NULL
+  | CAST
+  | AS
+  | BETWEEN
+  | SET
+  | WITH
   | SELECT
   | FROM
   | WHERE
   | ORDER
   | BY
+  | TOP
   | JOIN
   | INNER
   | LEFT
@@ -19,6 +28,11 @@ type token =
   | LE
   | GT
   | GE
+  | PLUS
+  | MUL
+  | SUB
+  | DIV
+  | MOD
   | COMMA
   | AND
   | OR
@@ -29,11 +43,20 @@ type tokenId =
     | TOKEN_EOF
     | TOKEN_ASC
     | TOKEN_DESC
+    | TOKEN_LIKE
+    | TOKEN_NOT
+    | TOKEN_NULL
+    | TOKEN_CAST
+    | TOKEN_AS
+    | TOKEN_BETWEEN
+    | TOKEN_SET
+    | TOKEN_WITH
     | TOKEN_SELECT
     | TOKEN_FROM
     | TOKEN_WHERE
     | TOKEN_ORDER
     | TOKEN_BY
+    | TOKEN_TOP
     | TOKEN_JOIN
     | TOKEN_INNER
     | TOKEN_LEFT
@@ -44,6 +67,11 @@ type tokenId =
     | TOKEN_LE
     | TOKEN_GT
     | TOKEN_GE
+    | TOKEN_PLUS
+    | TOKEN_MUL
+    | TOKEN_SUB
+    | TOKEN_DIV
+    | TOKEN_MOD
     | TOKEN_COMMA
     | TOKEN_AND
     | TOKEN_OR
