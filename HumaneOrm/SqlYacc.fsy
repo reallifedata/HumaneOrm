@@ -9,36 +9,62 @@ open HumaneOrm.Sql
 
 //literal keyword tokens
 %token AND OR 
-%token COMMA   
-%token EQ LT LE GT GE PLUS MUL SUB DIV MOD
+%token COMMA DOT
+%token EQ LT LE GT GE MUL SUB DIV MOD STAR ADD POW
 %token JOIN INNER LEFT RIGHT ON   
-%token SELECT FROM WHERE ORDER BY TOP
+%token SELECT FROM WHERE ORDER BY TOP COUNT DISTINCT
 %token LIKE NOT NULL CAST AS BETWEEN SET WITH
 %token ASC DESC   
 %token EOF   
- 
+%token LPAREN RPAREN LBRACKET RBRACKET
+
 // The start token becomes a parser function in the compiled code:
 %start start   
-%type <HumaneOrm.Sql.sqlStatement> start   
+%type <HumaneOrm.Sql.SqlStatement> start   
  
 %%   
  
-start:  SELECT columnList   
+start:  query EOF { $1 }
+
+query:  SELECT optTopDistinct columnList   
         FROM ID   
         joinList   
         whereClause   
-        orderByClause   
-        EOF                 {   
-                                { Table = $4;   
-                                  Columns = List.rev $2;   
-                                  Joins = $5;   
-                                  Where = $6;   
-                                  OrderBy = $7 }   
+        orderByClause   {   
+                                { 
+                                    Table = $5;
+                                    TopDistinct = $2;
+                                    Columns = List.rev $3;   
+                                    Joins = $6;   
+                                    Where = $7;   
+                                    OrderBy = $8 
+                                }   
                             }   
-columnList:   
-    | ID                    { [$1]}   
-    | columnList COMMA ID  { $3 :: $1 }   
- 
+optTopDistinct:
+	|								{None}
+	| TOP LPAREN INT RPAREN			{Some(Top($3))}
+	| DISTINCT						{Some(Distinct)}
+
+columnList: //columnList produces type Column list
+    | column		{ [$1] }
+    | columnList COMMA column  { $3 :: $1 }   
+
+column: //columns produce type Column
+	| value											{ Expression(Atom($1), $1) }
+	| expressionChain								{ Expression($1, String("[NA]"):> Value) }
+	| expressionChain AS value						{ Expression($1, $3) }
+    | LPAREN query RPAREN AS value					{ Subquery($2, $5) }				
+
+expressionChain: //expressionChains produce type ScalarExpression
+	| COUNT LPAREN expressionChain RPAREN			{ Unary(Count, $3)}
+	| expression									{ $1 }
+	| expression op expressionChain					{ Binary($2, $1, $3) }
+
+expression: //expressions produce type ScalarExpression 
+	| value											{ Atom($1) }
+	| value DOT value								{ Binary(NameScope, Atom($1), Atom($3)) }
+	| LPAREN expressionChain RPAREN					{ $2 }
+
 // join clause   
 joinList:   
     |                               { [] }   
@@ -46,10 +72,14 @@ joinList:
     | joinClause joinList           { $1 :: $2 }       
  
 joinClause:   
-    | INNER JOIN ID joinOnClause    { $3, Inner, $4 }   
-    | LEFT JOIN ID joinOnClause     { $3, Left, $4 }   
-    | RIGHT JOIN ID joinOnClause    { $3, Right, $4 }   
- 
+    | INNER JOIN joinTable joinOnClause    { $3, Inner, $4 }   
+    | LEFT JOIN joinTable joinOnClause     { $3, Left, $4 }   
+    | RIGHT JOIN joinTable joinOnClause    { $3, Right, $4 }   
+
+joinTable: //joinTables produce JoinTable
+	| LPAREN query RPAREN AS ID		{Subquery($2, $5)}
+	| ID							{Table($1)}
+
 joinOnClause:   
     |                               { None }   
     | ON conditionList              { Some($2) }   
@@ -64,12 +94,13 @@ whereClause:
     |                               { None }   
     | WHERE conditionList           { Some($2) }   
  
-op: EQ { Eq } | LT { Lt } | LE { Le } | GT { Gt } | GE { Ge }   
+op: EQ { Eq } | LT { Lt } | LE { Le } | GT { Gt } | GE { Ge } | ADD { Add } | SUB { Sub } | MUL { Mul } | DIV { Div } | MOD { Mod } | POW {Pow}
  
 value:   
-    | INT                   { Int($1) }   
-    | FLOAT                 { Float($1) }   
-    | ID                    { String($1) }   
+    | LBRACKET value RBRACKET   { $2 }   
+    | INT						{ Int($1) }   
+    | FLOAT						{ Float($1) }   
+    | ID						{ String($1) }   
  
 // order by clause   
  
@@ -82,8 +113,8 @@ orderByList:
     | orderBy COMMA orderByList     { $1 :: $3 }   
  
 orderBy:   
-    | ID                            { $1, Asc }   
-    | ID ASC                        { $1, Asc }   
-    | ID DESC                       { $1, Desc}   
+    | value                            { $1, Asc }   
+    | value ASC                        { $1, Asc }   
+    | value DESC                       { $1, Desc}   
  
 %%

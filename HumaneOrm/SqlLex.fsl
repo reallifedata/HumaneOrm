@@ -32,6 +32,8 @@ let keywords =
         "BETWEEN", BETWEEN;   
         "SET", SET;   
         "WITH", WITH;   
+        "COUNT", COUNT;   
+        "DISTINCT", DISTINCT;   
     ] |> Map.ofList   
  
 let ops =   
@@ -41,11 +43,12 @@ let ops =
         "<=",   LE;   
         ">",    GT;   
         ">=",   GE;   
-        "+",   PLUS;   
+        "+",   ADD;   
         "*",   MUL;   
         "-",   SUB;   
         "/",   DIV;   
         "%",   MOD;   
+        "^",   POW;   
     ] |> Map.ofList   
 }   
  
@@ -53,10 +56,10 @@ let char        = ['a'-'z' 'A'-'Z']
 let digit       = ['0'-'9']   
 let int         = '-'?digit+   
 let float       = '-'?digit+ '.' digit+   
-let identifier  = char(char|digit|['-' '_' '.'])*   
+let identifier  = char(char|digit|['-' '_'])*   
 let whitespace  = [' ' '\t']   
 let newline     = "\n\r" | '\n' | '\r'  
-let operator    = ">" | ">=" | "<" | "<=" | "="  
+let operator    = ">" | ">=" | "<" | "<=" | "=" | "+" | "*" | "-" | "/" | "%" | "^"
  
 rule tokenize = parse   
 | '\'' [^'\'']* '\'' {  ID((LexBuffer<string>.LexemeString lexbuf).Replace("\'","")) }
@@ -65,8 +68,14 @@ rule tokenize = parse
 | int           { INT(Int32.Parse(LexBuffer<int>.LexemeString lexbuf)) }   
 | float         { FLOAT(Double.Parse(LexBuffer<float>.LexemeString lexbuf)) }   
 | operator      { ops.[LexBuffer<string>.LexemeString lexbuf] }   
-| identifier    { match keywords.TryFind(LexBuffer<string>.LexemeString lexbuf) with   
+| identifier    { match keywords.TryFind((LexBuffer<string>.LexemeString lexbuf).ToUpper()) with   
                     | Some(token) -> token   
                     | None -> ID(LexBuffer<string>.LexemeString lexbuf) }   
+| '*'           { STAR }   
+| '.'           { DOT }   
 | ','           { COMMA }   
+| "("			{ LPAREN }
+| ")"			{ RPAREN }
+| "["			{ LBRACKET }
+| "]"			{ RBRACKET }
 | eof           { EOF }
