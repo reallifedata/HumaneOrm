@@ -10,10 +10,10 @@ open HumaneOrm.Sql
 //literal keyword tokens
 %token AND OR 
 %token COMMA DOT
-%token EQ LT LE GT GE MUL SUB DIV MOD STAR ADD POW
-%token JOIN INNER LEFT RIGHT ON   
+%token EQ LT LE GT GE MUL SUB DIV MOD STAR ADD POW LIKE ESCAPE
+%token JOIN INNER LEFT RIGHT ON CROSS APPLY OUTER
 %token SELECT FROM WHERE ORDER BY TOP COUNT DISTINCT
-%token LIKE NOT NULL CAST AS BETWEEN SET WITH
+%token NOT NULL CAST AS BETWEEN SET WITH
 %token ASC DESC   
 %token EOF   
 %token LPAREN RPAREN LBRACKET RBRACKET
@@ -27,7 +27,7 @@ open HumaneOrm.Sql
 start:  query EOF { $1 }
 
 query:  SELECT optTopDistinct columnList   
-        FROM ID   
+        FROM joinTable
         joinList   
         whereClause   
         orderByClause   {   
@@ -40,81 +40,83 @@ query:  SELECT optTopDistinct columnList
                                     OrderBy = $8 
                                 }   
                             }   
-optTopDistinct:
-	|								{None}
-	| TOP LPAREN INT RPAREN			{Some(Top($3))}
-	| DISTINCT						{Some(Distinct)}
+subquery: //subquery produces type Subquery
+	| LPAREN query RPAREN value						{ $2, $4 }
+	| LPAREN query RPAREN AS value					{ $2, $5 }
+
+optTopDistinct: //optTopDistinct produces type TopDistinct option
+	|												{ None}
+	| TOP LPAREN INT RPAREN							{ Some(Top($3)) }
+	| DISTINCT										{ Some(Distinct) }
 
 columnList: //columnList produces type Column list
-    | column		{ [$1] }
-    | columnList COMMA column  { $3 :: $1 }   
+    | column										{ [$1] }
+    | columnList COMMA column						{ $3 :: $1 }   
 
 column: //columns produce type Column
 	| value											{ Expression(Atom($1), $1) }
+	| subquery										{ ColumnSubquery($1) }
 	| expressionChain								{ Expression($1, String("[NA]"):> Value) }
-	| expressionChain AS value						{ Expression($1, $3) }
-    | LPAREN query RPAREN AS value					{ Subquery($2, $5) }				
+	| expressionChain AS value						{ Expression($1, $3) }				
 
 expressionChain: //expressionChains produce type ScalarExpression
-	| COUNT LPAREN expressionChain RPAREN			{ Unary(Count, $3)}
+	| COUNT LPAREN expressionChain RPAREN			{ Unary(Count, $3) }
 	| expression									{ $1 }
-	| expression op expressionChain					{ Binary($2, $1, $3) }
+	| expressionChain op expressionChain			{ Binary($2, $1, $3) }
+	| LPAREN expressionChain RPAREN					{ $2 }
 
 expression: //expressions produce type ScalarExpression 
 	| value											{ Atom($1) }
 	| value DOT value								{ Binary(NameScope, Atom($1), Atom($3)) }
-	| LPAREN expressionChain RPAREN					{ $2 }
 
-// join clause   
-joinList:   
-    |                               { [] }   
-    | joinClause                    { [$1] }   
-    | joinClause joinList           { $1 :: $2 }       
+joinList:  //joinList produces type JoinTable list
+    |												{ [] }   
+    | joinClause									{ [$1] }   
+    | joinClause joinList							{ $1 :: $2 }       
  
-joinClause:   
-    | INNER JOIN joinTable joinOnClause    { $3, Inner, $4 }   
-    | LEFT JOIN joinTable joinOnClause     { $3, Left, $4 }   
-    | RIGHT JOIN joinTable joinOnClause    { $3, Right, $4 }   
+joinClause:  //joinClause produces type JoinTable
+    | INNER APPLY subquery							{ TableSubquery($3), InnerApply, None }   
+    | OUTER APPLY subquery							{ TableSubquery($3), OuterApply, None }   
+    | CROSS APPLY subquery							{ TableSubquery($3), CrossApply, None }   
+    | INNER JOIN joinTable joinOnClause				{ $3, Inner, $4 }   
+    | LEFT OUTER JOIN joinTable joinOnClause		{ $4, Left, $5 }   
+    | RIGHT OUTER JOIN joinTable joinOnClause		{ $4, Right, $5 }   
 
 joinTable: //joinTables produce JoinTable
-	| LPAREN query RPAREN AS ID		{Subquery($2, $5)}
-	| ID							{Table($1)}
+	| subquery										{ TableSubquery($1) }
+	| value DOT value AS value						{ Table($3, $5) }
+	| value AS value								{ Table($1, $3) }
+	| value DOT value								{ Table($3, $3) }
+	| value											{ Table($1, $1) }
 
-joinOnClause:   
-    |                               { None }   
-    | ON conditionList              { Some($2) }   
- 
-conditionList:   
-    | value op value                    { Cond($1, $2, $3) }   
-    | value op value AND conditionList  { And(Cond($1, $2, $3), $5) }   
-    | value op value OR conditionList   { Or(Cond($1, $2, $3), $5) }   
- 
+joinOnClause: //joinOnClause produces type JoinType * Where option
+    |												{ None }   
+    | ON expressionChain							{ Some($2) }   
+  
 // where clause   
 whereClause:   
-    |                               { None }   
-    | WHERE conditionList           { Some($2) }   
+    |												{ None }   
+    | WHERE expressionChain							{ Some($2) }   
  
-op: EQ { Eq } | LT { Lt } | LE { Le } | GT { Gt } | GE { Ge } | ADD { Add } | SUB { Sub } | MUL { Mul } | DIV { Div } | MOD { Mod } | POW {Pow}
+op: EQ { Eq } | LT { Lt } | LE { Le } | GT { Gt } | GE { Ge } | ADD { Add } | SUB { Sub } | MUL { Mul } | DIV { Div } | MOD { Mod } | POW {Pow} | LIKE {Like} | ESCAPE {Escape} | AND {And} | OR {Or}
  
-value:   
-    | LBRACKET value RBRACKET   { $2 }   
-    | INT						{ Int($1) }   
-    | FLOAT						{ Float($1) }   
-    | ID						{ String($1) }   
- 
-// order by clause   
- 
+value: //value produces type Value, the leaf nodes of an expression tree
+    | LBRACKET value RBRACKET						{ $2 }   
+    | INT											{ Int($1) }   
+    | FLOAT											{ Float($1) }   
+    | ID											{ String($1) }   
+  
 orderByClause:   
-    |                               { [] }   
-    | ORDER BY orderByList          { $3 }   
+    |												{ [] }   
+    | ORDER BY orderByList							{ $3 }   
  
 orderByList:   
-    | orderBy                       { [$1] }   
-    | orderBy COMMA orderByList     { $1 :: $3 }   
+    | orderBy										{ [$1] }   
+    | orderBy COMMA orderByList						{ $1 :: $3 }   
  
 orderBy:   
-    | value                            { $1, Asc }   
-    | value ASC                        { $1, Asc }   
-    | value DESC                       { $1, Desc}   
+    | value											{ $1, Asc }   
+    | value ASC										{ $1, Asc }   
+    | value DESC									{ $1, Desc }   
  
 %%

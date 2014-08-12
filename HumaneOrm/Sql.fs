@@ -8,18 +8,17 @@ module Sql =
 
     type Dir = Asc | Desc   
 
-    type Op = Eq | Gt | Ge | Lt | Le | Add | Sub | Div | Mul | Mod | Pow | Count | NameScope   // =, >, >=, <, <=   
+    type Op = Eq | Gt | Ge | Lt | Le | Add | Sub | Div | Mul | Mod | Pow | Count | NameScope | Like | Escape | And | Or // =, >, >=, <, <=   
  
     type Order = Value * Dir   
  
-    type Where =   
-        | Cond of (Value * Op * Value)   
-        | And of Where * Where   
-        | Or of Where * Where   
+//    type Where =   
+//        | Cond of (Value * Op * Value)   
+//        | And of Where * Where   
+//        | Or of Where * Where   
  
-    type JoinType = Inner | Left | Right   
+    type JoinType = Inner | Left | Right | InnerApply | OuterApply | CrossApply
  
-    
     type ScalarExpression =
         | Atom of Value
         | Unary of (Op * ScalarExpression)
@@ -31,16 +30,17 @@ module Sql =
         | Top of int
 
     type  SqlStatement =   
-        { Table : string;   
+        { Table : JoinTable;   
             TopDistinct : TopDistinct option; 
             Columns : Column list;   
             Joins : Join list;   
-            Where : Where option;   
+            Where : ScalarExpression option;   
             OrderBy : Order list }
     and Column = 
         | Expression of (ScalarExpression * Value)
-        | Subquery of (SqlStatement * Value)
+        | ColumnSubquery of Subquery
     and JoinTable =
-        | Table of string
-        | Subquery of (SqlStatement * string)
-    and Join = JoinTable * JoinType * Where option
+        | Table of (Value * Value)
+        | TableSubquery of Subquery
+    and Join = JoinTable * JoinType * ScalarExpression option
+    and Subquery = SqlStatement * Value

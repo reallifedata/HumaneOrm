@@ -24,31 +24,37 @@ let keywords =
         "OR", OR;   
         "ON", ON;   
         "TOP", TOP;   
-        "LIKE", LIKE;   
         "NOT", NOT;   
         "NULL", NULL;   
-        "CAST", CAST;   
         "AS", AS;   
+        "CAST", CAST;   
         "BETWEEN", BETWEEN;   
         "SET", SET;   
         "WITH", WITH;   
         "COUNT", COUNT;   
         "DISTINCT", DISTINCT;   
+        "CROSS", CROSS;   
+        "APPLY", APPLY;   
+        "OUTER", OUTER;   
     ] |> Map.ofList   
  
 let ops =   
     [   
-        "=",    EQ;   
-        "<",    LT;   
-        "<=",   LE;   
-        ">",    GT;   
-        ">=",   GE;   
-        "+",   ADD;   
-        "*",   MUL;   
-        "-",   SUB;   
-        "/",   DIV;   
-        "%",   MOD;   
-        "^",   POW;   
+        "=",      EQ;   
+        "<",      LT;   
+        "<=",     LE;   
+        ">",      GT;   
+        ">=",     GE;   
+        "+",      ADD;   
+        "*",      MUL;   
+        "-",      SUB;   
+        "/",      DIV;   
+        "%",      MOD;   
+        "^",      POW;   
+        "LIKE",   LIKE;   
+        "ESCAPE", ESCAPE;   
+        "AND",    AND;   
+        "OR",     OR;   
     ] |> Map.ofList   
 }   
  
@@ -59,15 +65,16 @@ let float       = '-'?digit+ '.' digit+
 let identifier  = char(char|digit|['-' '_'])*   
 let whitespace  = [' ' '\t']   
 let newline     = "\n\r" | '\n' | '\r'  
-let operator    = ">" | ">=" | "<" | "<=" | "=" | "+" | "*" | "-" | "/" | "%" | "^"
+let operator    = ">" | ">=" | "<" | "<=" | "=" | "+" | "*" | "-" | "/" | "%" | "^" | "LIKE" | "ESCAPE" | "AND" | "OR"
  
 rule tokenize = parse   
 | '\'' [^'\'']* '\'' {  ID((LexBuffer<string>.LexemeString lexbuf).Replace("\'","")) }
+| "N\'" [^'\'']* '\'' {  ID((LexBuffer<string>.LexemeString lexbuf).Replace("\'","")) }
 | whitespace    { tokenize lexbuf }   
 | newline       { lexbuf.EndPos <- lexbuf.EndPos.NextLine; tokenize lexbuf; }   
 | int           { INT(Int32.Parse(LexBuffer<int>.LexemeString lexbuf)) }   
 | float         { FLOAT(Double.Parse(LexBuffer<float>.LexemeString lexbuf)) }   
-| operator      { ops.[LexBuffer<string>.LexemeString lexbuf] }   
+| operator      { ops.[(LexBuffer<string>.LexemeString lexbuf).ToUpper()] }   
 | identifier    { match keywords.TryFind((LexBuffer<string>.LexemeString lexbuf).ToUpper()) with   
                     | Some(token) -> token   
                     | None -> ID(LexBuffer<string>.LexemeString lexbuf) }   

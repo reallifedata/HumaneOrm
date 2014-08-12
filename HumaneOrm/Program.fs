@@ -41,31 +41,57 @@ FROM ( SELECT
             ,(select a from baz) as SubqueryTest
             ,(select b from foobar) as [SubqueryTestWithBracket]
         from
-            x
+            (select distinct bazz from foo) as theTable
+            outer apply (select [a] from bar where 1 = 1) as table2
+            right outer join Table3 
+                ON a LIKE '%b%'
     "
     let stripSpExecuteSql (input:string) =
         if not(input.Trim().StartsWith("exec sp_executesql")) then 
             input.Trim()
         else
             if not(input.Contains("@p__linq__0")) then
-                input.Trim().Replace("exec sp_executesql N'","").TrimEnd([|'\''|])
+                input.Trim().Replace("exec sp_executesql N'","").TrimEnd([|'\''|]).Replace("''","'")
             else
-                let stripped = input.Trim().Replace("exec sp_executesql N'","") |> (fun x -> x.Substring(0, x.IndexOf("]',")+1))
+                let stripped = input.Trim().Replace("exec sp_executesql N'","") |> (fun x -> x.Substring(0, x.IndexOf("]',")+1).Replace("''","'"))
                 (new Regex(@"@p__linq__[\d]+=[^,]+")).Matches(input) 
                     |> Seq.cast
                     |> Seq.map(fun x-> x:> System.Text.RegularExpressions.Match)
                     |> Seq.map(fun x-> ((x.Value.Split [|'='|]).[0].Trim(), (x.Value.Split [|'='|]).[1].Trim()))
                     |> Seq.fold(fun (acc:string) (k, v) -> acc.Replace(k,v)) stripped
 
+    let visitValue (v:Value) =
+        match v with
+            | Int x -> sprintf "%d" x
+            | Float x -> sprintf "%f" x
+            | String x -> sprintf "%s" x
+
+    let rec visitExpressionTree (expressionTree:ScalarExpression) =
+        match expressionTree with
+            | Atom(a)  -> visitValue a
+            | Binary(NameScope,e1,e2) -> sprintf "%s.%s" (visitExpressionTree e1) (visitExpressionTree e2)
+            | Binary(o,e1,e2) -> sprintf "%s %A %s" (visitExpressionTree e1) o (visitExpressionTree e2)
+            | _ -> "goo"
+    
+    let rec visitQuery (sql:SqlStatement) =
+        sql.Columns |> Seq.map(fun x -> 
+                match x with 
+                | Expression(s,v) -> sprintf "%s as %s,\n" (visitExpressionTree s) (visitValue v)
+                | ColumnSubquery(s) -> sprintf "(%A\n) as %s,\n" (visitQuery (fst s)) (visitValue (snd s))
+        ) |> Seq.reduce (+)
+
     [<EntryPoint>]
         let main argv = 
             let sql = stripSpExecuteSql test03
-            //printfn "Before: %A" sql
+            printfn "Before: %A\n\n" sql
             let lexbuf = LexBuffer<_>.FromString sql
-            try
-                Parser.start Lexer.tokenize lexbuf |> printfn "%A" 
-            with
-                | ex -> printfn "Error on line %d near %A" lexbuf.StartPos.Line (new string(lexbuf.Lexeme))
+            let sqlTree =
+                try
+                    Parser.start Lexer.tokenize lexbuf 
+                with
+                    | ex -> printfn "Parse error started at %A" (sql.Substring(lexbuf.StartPos.AbsoluteOffset)); raise(Exception("Parse error"))
+            printfn "%A\n\n" sqlTree
+            printfn "%A\n\n" (visitQuery sqlTree)
             Console.WriteLine("(press any key)")   
             Console.ReadKey(true) |> ignore
             0

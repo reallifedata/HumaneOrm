@@ -8,7 +8,6 @@ type token =
   | EOF
   | ASC
   | DESC
-  | LIKE
   | NOT
   | NULL
   | CAST
@@ -29,6 +28,9 @@ type token =
   | LEFT
   | RIGHT
   | ON
+  | CROSS
+  | APPLY
+  | OUTER
   | EQ
   | LT
   | LE
@@ -41,6 +43,8 @@ type token =
   | STAR
   | ADD
   | POW
+  | LIKE
+  | ESCAPE
   | COMMA
   | DOT
   | AND
@@ -56,7 +60,6 @@ type tokenId =
     | TOKEN_EOF
     | TOKEN_ASC
     | TOKEN_DESC
-    | TOKEN_LIKE
     | TOKEN_NOT
     | TOKEN_NULL
     | TOKEN_CAST
@@ -77,6 +80,9 @@ type tokenId =
     | TOKEN_LEFT
     | TOKEN_RIGHT
     | TOKEN_ON
+    | TOKEN_CROSS
+    | TOKEN_APPLY
+    | TOKEN_OUTER
     | TOKEN_EQ
     | TOKEN_LT
     | TOKEN_LE
@@ -89,6 +95,8 @@ type tokenId =
     | TOKEN_STAR
     | TOKEN_ADD
     | TOKEN_POW
+    | TOKEN_LIKE
+    | TOKEN_ESCAPE
     | TOKEN_COMMA
     | TOKEN_DOT
     | TOKEN_AND
@@ -102,6 +110,7 @@ type nonTerminalId =
     | NONTERM__startstart
     | NONTERM_start
     | NONTERM_query
+    | NONTERM_subquery
     | NONTERM_optTopDistinct
     | NONTERM_columnList
     | NONTERM_column
@@ -111,7 +120,6 @@ type nonTerminalId =
     | NONTERM_joinClause
     | NONTERM_joinTable
     | NONTERM_joinOnClause
-    | NONTERM_conditionList
     | NONTERM_whereClause
     | NONTERM_op
     | NONTERM_value
