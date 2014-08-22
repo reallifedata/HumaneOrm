@@ -41,82 +41,86 @@ query:  SELECT optTopDistinct columnList
                                 }   
                             }   
 subquery: //subquery produces type Subquery
-	| LPAREN query RPAREN value						{ $2, $4 }
-	| LPAREN query RPAREN AS value					{ $2, $5 }
+	| LPAREN query RPAREN value										{ $2, $4 }
+	| LPAREN query RPAREN AS value									{ $2, $5 }
 
 optTopDistinct: //optTopDistinct produces type TopDistinct option
-	|												{ None}
-	| TOP LPAREN INT RPAREN							{ Some(Top($3)) }
-	| DISTINCT										{ Some(Distinct) }
+	|																{ None }
+	| TOP LPAREN INT RPAREN											{ Some(Top($3)) }
+	| DISTINCT														{ Some(Distinct) }
 
 columnList: //columnList produces type Column list
-    | column										{ [$1] }
-    | columnList COMMA column						{ $3 :: $1 }   
+    | column														{ [$1] }
+    | columnList COMMA column										{ $3 :: $1 }   
 
 column: //columns produce type Column
-	| value											{ Expression(Atom($1), $1) }
-	| subquery										{ ColumnSubquery($1) }
-	| expressionChain								{ Expression($1, String("[NA]"):> Value) }
-	| expressionChain AS value						{ Expression($1, $3) }				
+	| value															{ Expression(Atom($1), $1) }
+	//| subquery													{ ColumnSubquery($1) }
+	| expressionChain												{ Expression($1, String("[NA]"):> Value) }
+	| expressionChain AS value										{ Expression($1, $3) }				
 
 expressionChain: //expressionChains produce type ScalarExpression
-	| COUNT LPAREN expressionChain RPAREN			{ Unary(Count, $3) }
-	| expression									{ $1 }
-	| expressionChain op expressionChain			{ Binary($2, $1, $3) }
-	| LPAREN expressionChain RPAREN					{ $2 }
+	| CAST LPAREN expressionChain AS value RPAREN					{ Cast($3, $5) }
+	| CAST LPAREN expressionChain AS value LPAREN value RPAREN RPAREN	{ CastWithPrecision($3, $5, $7) }
+	| subquery														{ ScalarExpressionSubquery($1) }
+	| COUNT subquery												{ Unary(Count, ScalarExpressionSubquery($2)) }
+	| COUNT LPAREN expressionChain RPAREN							{ Unary(Count, $3) }
+	| expression													{ $1 }
+	| expressionChain op expressionChain							{ Binary($2, $1, $3) }
+	| LPAREN expressionChain RPAREN									{ $2 }
 
 expression: //expressions produce type ScalarExpression 
-	| value											{ Atom($1) }
-	| value DOT value								{ Binary(NameScope, Atom($1), Atom($3)) }
+	| value															{ Atom($1) }
+	| value DOT value												{ Binary(NameScope, Atom($1), Atom($3)) }
 
 joinList:  //joinList produces type JoinTable list
-    |												{ [] }   
-    | joinClause									{ [$1] }   
-    | joinClause joinList							{ $1 :: $2 }       
+    |																{ [] }   
+    | joinClause													{ [$1] }   
+    | joinClause joinList											{ $1 :: $2 }       
  
 joinClause:  //joinClause produces type JoinTable
-    | INNER APPLY subquery							{ TableSubquery($3), InnerApply, None }   
-    | OUTER APPLY subquery							{ TableSubquery($3), OuterApply, None }   
-    | CROSS APPLY subquery							{ TableSubquery($3), CrossApply, None }   
-    | INNER JOIN joinTable joinOnClause				{ $3, Inner, $4 }   
-    | LEFT OUTER JOIN joinTable joinOnClause		{ $4, Left, $5 }   
-    | RIGHT OUTER JOIN joinTable joinOnClause		{ $4, Right, $5 }   
+    | INNER APPLY subquery											{ TableSubquery($3), InnerApply, None }   
+    | OUTER APPLY subquery											{ TableSubquery($3), OuterApply, None }   
+    | CROSS APPLY subquery											{ TableSubquery($3), CrossApply, None }   
+    | INNER JOIN joinTable joinOnClause								{ $3, Inner, $4 }   
+    | LEFT OUTER JOIN joinTable joinOnClause						{ $4, Left, $5 }   
+    | RIGHT OUTER JOIN joinTable joinOnClause						{ $4, Right, $5 }   
 
 joinTable: //joinTables produce JoinTable
-	| subquery										{ TableSubquery($1) }
-	| value DOT value AS value						{ Table($3, $5) }
-	| value AS value								{ Table($1, $3) }
-	| value DOT value								{ Table($3, $3) }
-	| value											{ Table($1, $1) }
+	| subquery														{ TableSubquery($1) }
+	| value DOT value AS value										{ Table($3, $5) }
+	| value AS value												{ Table($1, $3) }
+	| value DOT value												{ Table($3, $3) }
+	| value															{ Table($1, $1) }
 
 joinOnClause: //joinOnClause produces type JoinType * Where option
-    |												{ None }   
-    | ON expressionChain							{ Some($2) }   
+    |																{ None }   
+    | ON expressionChain											{ Some($2) }   
   
 // where clause   
 whereClause:   
-    |												{ None }   
-    | WHERE expressionChain							{ Some($2) }   
+    |																{ None }   
+    | WHERE expressionChain											{ Some($2) }   
  
 op: EQ { Eq } | LT { Lt } | LE { Le } | GT { Gt } | GE { Ge } | ADD { Add } | SUB { Sub } | MUL { Mul } | DIV { Div } | MOD { Mod } | POW {Pow} | LIKE {Like} | ESCAPE {Escape} | AND {And} | OR {Or}
  
 value: //value produces type Value, the leaf nodes of an expression tree
-    | LBRACKET value RBRACKET						{ $2 }   
-    | INT											{ Int($1) }   
-    | FLOAT											{ Float($1) }   
-    | ID											{ String($1) }   
+    | LBRACKET value RBRACKET										{ $2 }   
+    | INT															{ Int($1) }   
+    | FLOAT															{ Float($1) }   
+    | ID															{ String($1) }   
   
 orderByClause:   
-    |												{ [] }   
-    | ORDER BY orderByList							{ $3 }   
+    |																{ [] }   
+    | ORDER BY orderByList											{ $3 }   
  
 orderByList:   
-    | orderBy										{ [$1] }   
-    | orderBy COMMA orderByList						{ $1 :: $3 }   
+    | orderBy														{ [$1] }   
+    | orderBy COMMA orderByList										{ $1 :: $3 }   
  
 orderBy:   
-    | value											{ $1, Asc }   
-    | value ASC										{ $1, Asc }   
-    | value DESC									{ $1, Desc }   
+    | value															{ $1, Asc }   
+    | value ASC														{ $1, Asc }   
+    | value DESC													{ $1, Desc }   
  
 %%

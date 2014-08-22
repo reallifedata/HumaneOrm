@@ -63,6 +63,7 @@
       <OtherFlags>--unicode</OtherFlags>
     </FsLex>
     <Compile Include="SqlLex.fs" />
+    <Compile Include="StandardVisitor.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <PropertyGroup>

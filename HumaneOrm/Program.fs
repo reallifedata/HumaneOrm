@@ -4,6 +4,7 @@ open System.Text
 open System.Text.RegularExpressions
 open Sql
 open Lexer
+open StandardVisitor
 open Microsoft.FSharp.Text.Lexing
 
 module Program =
@@ -38,6 +39,8 @@ FROM ( SELECT
             ,((b ^ 2) - (4 * a * c)) / (4 * a ^ 2) as Quadratic
             ,count(1) as CountOne
             ,count( foo )
+            ,cast(x.x as foo)
+            ,cast(x.x as datetime2(7))
             ,(select a from baz) as SubqueryTest
             ,(select b from foobar) as [SubqueryTestWithBracket]
         from
@@ -60,25 +63,6 @@ FROM ( SELECT
                     |> Seq.map(fun x-> ((x.Value.Split [|'='|]).[0].Trim(), (x.Value.Split [|'='|]).[1].Trim()))
                     |> Seq.fold(fun (acc:string) (k, v) -> acc.Replace(k,v)) stripped
 
-    let visitValue (v:Value) =
-        match v with
-            | Int x -> sprintf "%d" x
-            | Float x -> sprintf "%f" x
-            | String x -> sprintf "%s" x
-
-    let rec visitExpressionTree (expressionTree:ScalarExpression) =
-        match expressionTree with
-            | Atom(a)  -> visitValue a
-            | Binary(NameScope,e1,e2) -> sprintf "%s.%s" (visitExpressionTree e1) (visitExpressionTree e2)
-            | Binary(o,e1,e2) -> sprintf "%s %A %s" (visitExpressionTree e1) o (visitExpressionTree e2)
-            | _ -> "goo"
-    
-    let rec visitQuery (sql:SqlStatement) =
-        sql.Columns |> Seq.map(fun x -> 
-                match x with 
-                | Expression(s,v) -> sprintf "%s as %s,\n" (visitExpressionTree s) (visitValue v)
-                | ColumnSubquery(s) -> sprintf "(%A\n) as %s,\n" (visitQuery (fst s)) (visitValue (snd s))
-        ) |> Seq.reduce (+)
 
     [<EntryPoint>]
         let main argv = 
@@ -91,7 +75,7 @@ FROM ( SELECT
                 with
                     | ex -> printfn "Parse error started at %A" (sql.Substring(lexbuf.StartPos.AbsoluteOffset)); raise(Exception("Parse error"))
             printfn "%A\n\n" sqlTree
-            printfn "%A\n\n" (visitQuery sqlTree)
+            printfn "%A\n\n" (visitSqlQuery sqlTree)
             Console.WriteLine("(press any key)")   
             Console.ReadKey(true) |> ignore
             0

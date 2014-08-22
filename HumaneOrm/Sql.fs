@@ -19,11 +19,6 @@ module Sql =
  
     type JoinType = Inner | Left | Right | InnerApply | OuterApply | CrossApply
  
-    type ScalarExpression =
-        | Atom of Value
-        | Unary of (Op * ScalarExpression)
-        | Binary of (Op * ScalarExpression * ScalarExpression)
-        | Trinary of (Op * ScalarExpression * ScalarExpression * ScalarExpression)
     
     type TopDistinct =
         | Distinct
@@ -36,9 +31,17 @@ module Sql =
             Joins : Join list;   
             Where : ScalarExpression option;   
             OrderBy : Order list }
+    and ScalarExpression =
+        | Atom of Value
+        | Unary of (Op * ScalarExpression)
+        | Binary of (Op * ScalarExpression * ScalarExpression)
+        | Cast of (ScalarExpression * Value)
+        | CastWithPrecision of (ScalarExpression * Value * Value)
+        | Trinary of (Op * ScalarExpression * ScalarExpression * ScalarExpression)
+        | ScalarExpressionSubquery of Subquery
     and Column = 
         | Expression of (ScalarExpression * Value)
-        | ColumnSubquery of Subquery
+        //| ColumnSubquery of Subquery
     and JoinTable =
         | Table of (Value * Value)
         | TableSubquery of Subquery
