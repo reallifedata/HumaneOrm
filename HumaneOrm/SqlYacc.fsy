@@ -63,7 +63,7 @@ expressionChain: //expressionChains produce type ScalarExpression
 	| CAST LPAREN expressionChain AS value RPAREN					{ Cast($3, $5) }
 	| CAST LPAREN expressionChain AS value LPAREN value RPAREN RPAREN	{ CastWithPrecision($3, $5, $7) }
 	| subquery														{ ScalarExpressionSubquery($1) }
-	| COUNT subquery												{ Unary(Count, ScalarExpressionSubquery($2)) }
+	//| COUNT subquery												{ Unary(Count, ScalarExpressionSubquery($2)) }
 	| COUNT LPAREN expressionChain RPAREN							{ Unary(Count, $3) }
 	| expression													{ $1 }
 	| expressionChain op expressionChain							{ Binary($2, $1, $3) }
